@@ -28,13 +28,13 @@ BOOL IniReadBinaryData(LPCWSTR FilePath, LPCWSTR KeyPath, LPCWSTR ValueName, CSt
 	CString Buffer;
 	if (IniReadString(FilePath, KeyPath, ValueName, Buffer) == 0)
 	{
-		return 0;
+		return FALSE;
 	}
 	else
 	{
 		Data = HexString2Binary(Buffer);
 
-		return 1;
+		return TRUE;
 	}
 }
 
@@ -52,6 +52,15 @@ BOOL IniWriteBinaryData(LPCWSTR FilePath, LPCWSTR KeyPath, LPCWSTR ValueName, co
 BOOL IniDeleteString(LPCWSTR FilePath, LPCWSTR KeyPath, LPCWSTR ValueName)
 {
 	return WritePrivateProfileStringW(KeyPath, ValueName, NULL, FilePath);
+}
+
+
+BOOL IniDeleteSection(
+	LPCWSTR FilePath,
+	LPCWSTR KeyPath
+	)
+{
+	return WritePrivateProfileStringW(KeyPath, NULL, NULL, FilePath);
 }
 
 BOOL IniGetSectionNames(LPCWSTR FilePath, CString& Names)
@@ -89,7 +98,7 @@ BOOL IniGetValues(LPCWSTR FilePath, LPCWSTR Path, CString& Values)
 		}
 		else
 		{
-			Values.ReleaseBuffer(cchData);
+			Values.ReleaseBuffer(chNewData);
 			return TRUE;
 		}
 	}

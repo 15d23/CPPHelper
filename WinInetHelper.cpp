@@ -172,12 +172,12 @@ Start:
 	hr=Info.InternetOpenW(lpszAgent);
 	
 	if (hr!=S_OK)
-		return HresultFromBool();
+		return hr;
 
 	hr=Info.InternetConnectW();
 
 	if (hr!=S_OK)
-		return HresultFromBool();
+		return hr;
 
 		
 
@@ -185,7 +185,7 @@ Start:
 	hr=Info.HttpOpenRequestW();
 
 	if (hr!=S_OK)
-		return HresultFromBool();
+		return hr;
 
 	
 	UINT64 FileSize = 0, UsedSize = 0;
@@ -257,8 +257,11 @@ Start:
 		case HTTP_STATUS_PARTIAL_CONTENT:
 			//支持断点续传
 			break;
+		case HTTP_STATUS_OK:
 		case HTTP_STATUS_RESET_CONTENT:
 			//不支持断点续传
+		case 416:
+			//超出了实际范围
 			UsedSize = dwBytesRead = 0;
 			pStream->put_Size(0);
 			break;
@@ -306,7 +309,7 @@ Start:
 
 			if (--TryCount)
 			{
-			Restart:
+				Sleep(1000);
 
 				hr = Info.InternetOpenW();
 
@@ -347,20 +350,20 @@ Start:
 				{
 				case HTTP_STATUS_PARTIAL_CONTENT:
 					//支持断点续传
+					continue;
 					break;
+				case HTTP_STATUS_OK:
 				case HTTP_STATUS_RESET_CONTENT:
 					//不支持断点续传
+				case 416:
+					//超出了实际范围
 					UsedSize = dwBytesRead = 0;
 					pStream->put_Size(0);
 					break;
 				case 0:
 					return E_FAIL;
 				case HTTP_STATUS_NOT_FOUND:
-					if (TryCount--)
-					{
-						Sleep(1000);
-						goto Restart;
-					}
+					goto Error;
 				default:
 					return Status;
 					break;
@@ -370,7 +373,6 @@ Start:
 			{
 				return HresultFromBool();
 			}
-			break;
 		}
 
 
@@ -384,7 +386,7 @@ Start:
 				//pStream->put_Size(0);
 
 				//意外的网络错误
-				return 59;
+				return __HRESULT_FROM_WIN32(ERROR_UNEXP_NET_ERR);
 			}
 
 			goto Error;
@@ -407,7 +409,7 @@ Start:
 
 			if (callBack(/*Dism_MSG_QUERY_ABORT*/38030, 0, 0, pUserData))
 			{
-				return ERROR_CANCELLED;
+				return __HRESULT_FROM_WIN32(ERROR_CANCELLED);
 			}
 		}
 
@@ -422,7 +424,7 @@ HRESULT DownloadFile(LPCWSTR Url, LPCWSTR FilePath, BaseCallBack callBack, LPVOI
 	CComPtr<IReadWriteStream> pStream;
 	pStream.p = StreamCreate(FilePath, GENERIC_WRITE,FILE_SHARE_READ,OPEN_ALWAYS);
 	if (!pStream.p)
-		return GetLastError();
+		return HresultFromBool();
 
 	return DownloadStream(Url, pStream, L"Mozilla/5.0 (Windows NT 6.3; WOW64; Trident/7.0; rv:11.0) like Gecko", NULL, callBack, pUserData);
 }
@@ -449,20 +451,20 @@ HRESULT WinInetGetFileSize(LPCWSTR Url, UINT64& FileSize)
 
 	try
 	{
-		HRESULT hr = 0;
+		HRESULT hr = S_OK;
 
 		HINTERNET m_hSession = ::InternetOpenW(L"Mozilla/5.0 (Windows NT 6.3; WOW64; Trident/7.0; rv:11.0) like Gecko", INTERNET_OPEN_TYPE_DIRECT, NULL, INTERNET_INVALID_PORT_NUMBER, 0);
 
 		if (m_hSession == 0)
 		{
-			return GetLastError();
+			return HresultFromBool();
 		}
 
 		HINTERNET hUrlFile = ::InternetOpenUrlW(m_hSession, Url, NULL, 0, 0, 0);
 
 		if (hUrlFile == 0)
 		{
-			hr = GetLastError();
+			hr = HresultFromBool();
 		}
 		else
 		{
@@ -476,7 +478,7 @@ HRESULT WinInetGetFileSize(LPCWSTR Url, UINT64& FileSize)
 			}
 			else
 			{
-				hr = GetLastError();
+				hr = HresultFromBool();
 			}
 
 			InternetCloseHandle(hUrlFile);

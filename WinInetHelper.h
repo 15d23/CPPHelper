@@ -2,17 +2,55 @@
 #include <Windows.h>
 #include <WinInet.h>
 
-HRESULT DownloadFile(LPCWSTR Url, CStringA& Buffer, DWORD* pCharSet , BaseCallBack callBack, LPVOID pUserData );
+_Check_return_ _Success_(return == S_OK)
+HRESULT DownloadFile(
+	_In_z_    LPCWSTR      Url,
+	_Out_     CStringA&    Buffer,
+	_Out_opt_ DWORD*       pCharSet ,
+	_In_opt_  BaseCallBack callBack,
+	_In_opt_  LPVOID       pUserData
+	);
 
-HRESULT DownloadFile(LPCWSTR Url, LPCWSTR FilePath, BaseCallBack callBack, LPVOID pUserData);
+_Check_return_ _Success_(return == S_OK)
+HRESULT DownloadFile(
+	_In_z_   LPCWSTR      Url,
+	_In_z_   LPCWSTR      FilePath,
+	_In_opt_ BaseCallBack callBack,
+	_In_opt_ LPVOID       pUserData
+	);
 
-HRESULT GetUrlString(LPCWSTR Url, CString& String, DWORD CodePage = -1/* -1为自动识别编码*/);
+_Check_return_ _Success_(return == S_OK)
+HRESULT GetUrlString(
+	_In_z_ LPCWSTR  Url,
+	_Out_  CString& String,
+	_In_   DWORD    CodePage = -1/* -1为自动识别编码*/
+	);
 
-HRESULT WinInetGetFileSize(LPCWSTR Url, UINT64& FileSize);
+_Check_return_ _Success_(return == S_OK)
+HRESULT WinInetGetFileSize(
+	_In_z_ LPCWSTR Url,
+	_Out_  UINT64& FileSize
+	);
 
-HRESULT DownloadFile(LPCWSTR Url, CStringA& Buffer, LPCWSTR lpszAgent, DWORD* pCharSet, BaseCallBack callBack, LPVOID pUserData);
+_Check_return_ _Success_(return == S_OK)
+HRESULT DownloadFile(
+	_In_z_     LPCWSTR      Url,
+	_Out_      CStringA&    Buffer,
+	_In_opt_z_ LPCWSTR      lpszAgent,
+	_Out_opt_  DWORD*       pCharSet,
+	_In_opt_   BaseCallBack callBack,
+	_In_opt_   LPVOID       pUserData
+	);
 
-HRESULT DownloadStream(LPCWSTR Url, IReadWriteStream* pStream, LPCWSTR lpszAgent, DWORD* pCharSet, BaseCallBack callBack, LPVOID pUserData);
+_Check_return_ _Success_(return == S_OK)
+HRESULT DownloadStream(
+	_In_z_     LPCWSTR           Url,
+	_In_       IReadWriteStream* pStream,
+	_In_opt_z_ LPCWSTR           lpszAgent,
+	_Out_opt_  DWORD*            pCharSet,
+	_In_opt_   BaseCallBack      callBack,
+	_In_opt_   LPVOID            pUserData
+	);
 
 class WinInetURLHelper
 {
@@ -27,7 +65,9 @@ public:
 	LPCWSTR lpszObjectName;
 	INTERNET_PORT nServerPort;
 
-	HRESULT ParseURLW(LPCWSTR URL);
+	HRESULT ParseURLW(
+		_In_z_ LPCWSTR URL
+		);
 
 	WinInetURLHelper()
 		: m_hSession(NULL)
@@ -62,29 +102,32 @@ public:
 	}
 
 	HRESULT InternetOpenW(
-		_In_opt_ LPCWSTR lpszAgent= L"Mozilla/5.0 (Windows NT 6.3; WOW64; Trident/7.0; rv:11.0) like Gecko",
-		_In_ DWORD dwAccessType= INTERNET_OPEN_TYPE_PRECONFIG,
-		_In_opt_ LPCWSTR lpszProxy=NULL,
-		_In_opt_ LPCWSTR lpszProxyBypass= INTERNET_INVALID_PORT_NUMBER,
-		_In_ DWORD dwFlags=0
+		_In_opt_ LPCWSTR lpszAgent       = L"Mozilla/5.0 (Windows NT 6.3; WOW64; Trident/7.0; rv:11.0) like Gecko",
+		_In_     DWORD   dwAccessType    = INTERNET_OPEN_TYPE_PRECONFIG,
+		_In_opt_ LPCWSTR lpszProxy       = NULL,
+		_In_opt_ LPCWSTR lpszProxyBypass = INTERNET_INVALID_PORT_NUMBER,
+		_In_     DWORD   dwFlags         = 0,
+		_In_     DWORD   TimeOut         = 2 * 60 * 1000
 		)
 	{
 		Close();
 
 		if (m_hSession = ::InternetOpenW(lpszAgent, dwAccessType, lpszProxy, lpszProxyBypass, dwFlags))
 		{
-			DWORD TimeOut = 30 * 1000;
-
-			::InternetSetOption(m_hSession, INTERNET_OPTION_CONNECT_TIMEOUT,&TimeOut,sizeof(TimeOut));
-			::InternetSetOption(m_hSession, INTERNET_OPTION_CONTROL_RECEIVE_TIMEOUT, &TimeOut, sizeof(TimeOut));
-			::InternetSetOption(m_hSession, INTERNET_OPTION_CONTROL_SEND_TIMEOUT, &TimeOut, sizeof(TimeOut));
-			::InternetSetOption(m_hSession, INTERNET_OPTION_DATA_RECEIVE_TIMEOUT, &TimeOut, sizeof(TimeOut));
-			::InternetSetOption(m_hSession, INTERNET_OPTION_DATA_SEND_TIMEOUT, &TimeOut, sizeof(TimeOut));
-			::InternetSetOption(m_hSession, INTERNET_OPTION_DISCONNECTED_TIMEOUT, &TimeOut, sizeof(TimeOut));
-			::InternetSetOption(m_hSession, INTERNET_OPTION_FROM_CACHE_TIMEOUT, &TimeOut, sizeof(TimeOut));
-			::InternetSetOption(m_hSession, INTERNET_OPTION_LISTEN_TIMEOUT, &TimeOut, sizeof(TimeOut));
-			::InternetSetOption(m_hSession, INTERNET_OPTION_RECEIVE_TIMEOUT, &TimeOut, sizeof(TimeOut));
-			::InternetSetOption(m_hSession, INTERNET_OPTION_SEND_TIMEOUT, &TimeOut, sizeof(TimeOut));
+			
+			if (TimeOut)
+			{
+				::InternetSetOption(m_hSession, INTERNET_OPTION_CONNECT_TIMEOUT, &TimeOut, sizeof(TimeOut));
+				::InternetSetOption(m_hSession, INTERNET_OPTION_CONTROL_RECEIVE_TIMEOUT, &TimeOut, sizeof(TimeOut));
+				::InternetSetOption(m_hSession, INTERNET_OPTION_CONTROL_SEND_TIMEOUT, &TimeOut, sizeof(TimeOut));
+				::InternetSetOption(m_hSession, INTERNET_OPTION_DATA_RECEIVE_TIMEOUT, &TimeOut, sizeof(TimeOut));
+				::InternetSetOption(m_hSession, INTERNET_OPTION_DATA_SEND_TIMEOUT, &TimeOut, sizeof(TimeOut));
+				::InternetSetOption(m_hSession, INTERNET_OPTION_DISCONNECTED_TIMEOUT, &TimeOut, sizeof(TimeOut));
+				::InternetSetOption(m_hSession, INTERNET_OPTION_FROM_CACHE_TIMEOUT, &TimeOut, sizeof(TimeOut));
+				::InternetSetOption(m_hSession, INTERNET_OPTION_LISTEN_TIMEOUT, &TimeOut, sizeof(TimeOut));
+				::InternetSetOption(m_hSession, INTERNET_OPTION_RECEIVE_TIMEOUT, &TimeOut, sizeof(TimeOut));
+				::InternetSetOption(m_hSession, INTERNET_OPTION_SEND_TIMEOUT, &TimeOut, sizeof(TimeOut));
+			}
 		}
 		return m_hSession ? S_OK : HresultFromBool();
 	}
@@ -93,11 +136,11 @@ public:
 		//_In_ HINTERNET hInternet,
 		//_In_ LPCWSTR lpszServerName,
 		//_In_ INTERNET_PORT nServerPort,
-		_In_opt_ LPCWSTR lpszUserName=NULL,
-		_In_opt_ LPCWSTR lpszPassword=NULL,
+		_In_opt_ LPCWSTR   lpszUserName = NULL,
+		_In_opt_ LPCWSTR   lpszPassword = NULL,
 		//_In_ DWORD dwService,
-		_In_ DWORD dwFlags = 0,
-		_In_opt_ DWORD_PTR dwContext=NULL
+		_In_     DWORD     dwFlags      = 0,
+		_In_opt_ DWORD_PTR dwContext    = NULL
 		)
 	{
 		
@@ -144,13 +187,33 @@ public:
 		_In_reads_opt_(dwHeadersLength) LPCWSTR lpszHeaders,
 		_In_ DWORD dwHeadersLength,
 		_In_reads_bytes_opt_(dwOptionalLength) LPVOID lpOptional=NULL,
-		_In_ DWORD dwOptionalLength=0
+		_In_ DWORD dwOptionalLength=0,
+		_In_ DWORD TryCount = 20 //服务器连接失败时的重试次数
 		)
 	{
-		return ::HttpSendRequestW(hUrlFile, lpszHeaders, dwHeadersLength, lpOptional, dwOptionalLength) ? S_OK : HresultFromBool();
+		for (;;)
+		{
+			if (::HttpSendRequestW(hUrlFile, lpszHeaders, dwHeadersLength, lpOptional, dwOptionalLength))
+			{
+				return S_OK;
+			}
+
+			auto lStatus = GetLastError();
+
+			if (ERROR_FILE_NOT_FOUND == lStatus && TryCount)
+			{
+				--TryCount;
+				
+				continue;
+			}
+
+			return lStatus != ERROR_SUCCESS ? __HRESULT_FROM_WIN32(lStatus) : E_FAIL;
+		}
 	}
 
-	HRESULT GetStatusCode(DWORD& Status)
+	HRESULT GetStatusCode(
+		_Out_ DWORD& Status
+		)
 	{
 		wchar_t szStatus[8];
 		DWORD cszStatus = ArraySize(szStatus);

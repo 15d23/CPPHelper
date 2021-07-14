@@ -383,6 +383,18 @@ namespace rapidxml
             return node;
         }
 
+		template<std::size_t name_size>
+		xml_node<Ch> *allocate_node_static(node_type type, const Ch(&name)[name_size], const Ch *value, std::size_t value_size)
+		{
+			return allocate_node(type, name, value, name_size - 1, value_size);
+		}
+
+		template<std::size_t name_size, std::size_t value_size>
+		xml_node<Ch> *allocate_node_static(node_type type, const Ch(&name)[name_size], const Ch(&value)[value_size])
+		{
+			return allocate_node(type, name, value, name_size - 1, value_size - 1);
+		}
+
         //! Allocates a new attribute from the pool, and optionally assigns name and value to it.
         //! If the allocation request cannot be accomodated, this function will throw <code>std::bad_alloc</code>.
         //! If exceptions are disabled by defining RAPIDXML_NO_EXCEPTIONS, this function
@@ -413,6 +425,18 @@ namespace rapidxml
             }
             return attribute;
         }
+
+		template<std::size_t name_size, std::size_t value_size>
+		xml_attribute<Ch> *allocate_attribute_static(const Ch(&name)[name_size], const Ch(&value)[value_size])
+		{
+			return allocate_attribute(name, value, name_size - 1, value_size - 1);
+		}
+
+		template<std::size_t name_size>
+		xml_attribute<Ch> *allocate_attribute_static(const Ch(&name)[name_size], const Ch *value, std::size_t value_size)
+		{
+			return allocate_attribute(name, value, name_size - 1, value_size);
+		}
 
 		Ch *allocate_string(const Ch *source)
 		{
@@ -810,9 +834,9 @@ namespace rapidxml
         //! \return Pointer to document that contains this attribute, or 0 if there is no parent document.
         xml_document<Ch> *document() const
         {
-            if (m_parent)
+            if (this->m_parent)
             {
-				return m_parent->pDocument;
+				return this->m_parent->pDocument;
             }
             else
                 return 0;
@@ -838,6 +862,14 @@ namespace rapidxml
                 return this->m_parent ? m_prev_attribute : 0;
         }
 
+		template<std::size_t name_size>
+		__forceinline
+		xml_attribute<Ch> *previous_attribute(const Ch(&name)[name_size], bool case_sensitive) const
+		{
+			//¼õÈ¥Ä©Î²½áÊø'\0'
+			return previous_attribute(name, name_size - 1, case_sensitive);
+		}
+
         //! Gets next attribute, optionally matching attribute name. 
         //! \param name Name of attribute to find, or 0 to return next attribute regardless of its name; this string doesn't have to be zero-terminated if name_size is non-zero
         //! \param name_size Size of name, in characters, or 0 to have size calculated automatically from string
@@ -857,6 +889,14 @@ namespace rapidxml
             else
                 return this->m_parent ? m_next_attribute : 0;
         }
+
+		template<std::size_t name_size>
+		__forceinline
+		xml_attribute<Ch> *next_attribute(const Ch(&name)[name_size], bool case_sensitive) const
+		{
+			//¼õÈ¥Ä©Î²½áÊø'\0'
+			return next_attribute(name, name_size - 1, case_sensitive);
+		}
 
     private:
 
@@ -946,6 +986,14 @@ namespace rapidxml
                 return m_first_node;
         }
 
+		template<std::size_t name_size>
+		__forceinline
+		xml_node<Ch> *first_node(const Ch(&name)[name_size], bool case_sensitive) const
+		{
+			//¼õÈ¥Ä©Î²½áÊø'\0'
+			return first_node(name, name_size - 1, case_sensitive);
+		}
+
         //! Gets last child node, optionally matching node name. 
         //! Behaviour is undefined if node has no children.
         //! Use first_node() to test if node has children.
@@ -955,7 +1003,9 @@ namespace rapidxml
         //! \return Pointer to found child, or 0 if not found.
         xml_node<Ch> *last_node(const Ch *name = 0, std::size_t name_size = 0, bool case_sensitive = true) const
         {
-            assert(m_first_node);  // Cannot query for last child if node has no children
+			if (!m_first_node)
+				return NULL;
+
             if (name)
             {
                 if (name_size == 0)
@@ -968,6 +1018,14 @@ namespace rapidxml
             else
                 return m_last_node;
         }
+
+		template<std::size_t name_size>
+		__forceinline
+		xml_node<Ch> *last_node(const Ch(&name)[name_size], bool case_sensitive) const
+		{
+			//¼õÈ¥×Ö·û´®Ä©Î²µÄ'\0'
+			return last_node(name, name_size - 1, case_sensitive);
+		}
 
         //! Gets previous sibling node, optionally matching node name. 
         //! Behaviour is undefined if node has no parent.
@@ -991,6 +1049,14 @@ namespace rapidxml
             else
                 return m_prev_sibling;
         }
+
+		template<std::size_t name_size>
+		__forceinline
+		xml_node<Ch> *previous_sibling(const Ch(&name)[name_size], bool case_sensitive) const
+		{
+			//¼õÈ¥×Ö·û´®Ä©Î²µÄ'\0'
+			return previous_sibling(name, name_size - 1, case_sensitive);
+		}
 
         //! Gets next sibling node, optionally matching node name. 
         //! Behaviour is undefined if node has no parent.
@@ -1017,6 +1083,14 @@ namespace rapidxml
                 return m_next_sibling;
         }
 
+		template<std::size_t name_size>
+		__forceinline
+		xml_node<Ch> *next_sibling(const Ch(&name)[name_size], bool case_sensitive) const
+		{
+			//¼õÈ¥×Ö·û´®Ä©Î²µÄ'\0'
+			return next_sibling(name, name_size - 1, case_sensitive);
+		}
+
         //! Gets first attribute of node, optionally matching attribute name.
         //! \param name Name of attribute to find, or 0 to return first attribute regardless of its name; this string doesn't have to be zero-terminated if name_size is non-zero
         //! \param name_size Size of name, in characters, or 0 to have size calculated automatically from string
@@ -1036,6 +1110,14 @@ namespace rapidxml
             else
                 return m_first_attribute;
         }
+
+		template<std::size_t name_size>
+		__forceinline
+		xml_attribute<Ch> *first_attribute(const Ch(&name)[name_size], bool case_sensitive) const
+		{
+			//¼õÈ¥×Ö·û´®Ä©Î²µÄ'\0'
+			return first_attribute(name, name_size - 1, case_sensitive);
+		}
 
         //! Gets last attribute of node, optionally matching attribute name.
         //! \param name Name of attribute to find, or 0 to return last attribute regardless of its name; this string doesn't have to be zero-terminated if name_size is non-zero
@@ -1061,6 +1143,14 @@ namespace rapidxml
             else
 				return m_last_attribute;
         }
+
+		template<std::size_t name_size>
+		__forceinline
+		 xml_attribute<Ch> *last_attribute(const Ch(&name)[name_size], bool case_sensitive) const
+		{
+			//¼õÈ¥×Ö·û´®Ä©Î²µÄ'\0'
+			return last_attribute(name, name_size - 1, case_sensitive);
+		}
 
         ///////////////////////////////////////////////////////////////////////////
         // Node modification
@@ -1406,13 +1496,13 @@ namespace rapidxml
 		{
 		}
 
-		HRESULT Load(CStringT< Ch, StrTraitATL< Ch, ChTraitsCRT< Ch > > > _Str)
+		LSTATUS Load(CStringT< Ch, StrTraitATL< Ch, ChTraitsCRT< Ch > > > _Str)
 		{
 			Str = _Str;
 			return parse<0>((Ch*)Str.GetString());
 		}
 
-		HRESULT ConstLoad(Ch* String)
+		LSTATUS ConstLoad(Ch* String)
 		{
 			return parse<0>(String);
 		}
@@ -1459,12 +1549,12 @@ namespace rapidxml
                 }
 				else
 				{
-					return E_FAIL;
+					return ERROR_BAD_FORMAT;
 					//RAPIDXML_PARSE_ERROR("expected <", text);
 				}
             }
 
-			return S_OK;
+			return ERROR_SUCCESS;
         }
 
         //! Clears the document by deleting all nodes and clearing the memory pool.
